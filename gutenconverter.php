@@ -1,5 +1,4 @@
 <?php
-
 /**
  *
  * @link              https://www.fiqhidayat.com
@@ -8,7 +7,7 @@
  *
  * @wordpress-plugin
  * Plugin Name:       GutenConverter
- * Plugin URI:        https://www.fiqhidayat.com/
+ * Plugin URI:        https://github.com/fiqhidayat/gutenconverter
  * Description:       Simple WordPress plugin to Mass Convert Article To Gutenberg Block.
  * Version:           1.0.0
  * Author:            Taufik Hidayat
@@ -70,11 +69,11 @@ function guten_convert(){
 
 	check_ajax_referer( 'gutenconvert', 'nonce' );
 
-	$paged = $_GET['paged'];
+	$paged = isset($_GET['paged']) ? intval(sanitize_text_field($_GET['paged'])) : 1;
 
 	$limit = $paged * 20;
-	$offset = (int)$paged == 1 ? 0 : ($paged -1) * 20;
-	$status = $_GET['status'];
+	$offset = $paged == 1 ? 0 : ($paged -1) * 20;
+	$status = isset($_GET['status']) ? sanitize_text_field($_GET['status']) : '';
 
 	$sql = "SELECT ID, post_content FROM $wpdb->posts WHERE post_type = 'post'";
 	if( $status ):
@@ -86,9 +85,9 @@ function guten_convert(){
 
 	foreach( $posts as $post ):
 
-		if( strpos( $post->post_content, '<!-- wp:paragraph -->' ) !== false) continue; // skip jika sudah ada tag gutenberg block
+		if( strpos( $post->post_content, '<!-- wp:paragraph -->' ) !== false) continue; // skip /lewati jika sudah ada tag gutenberg block
 
-		$content = gcConverter($post->post_content); //tambahkan tag html gutenbrg block
+		$content = gcConverter($post->post_content); //tambahkan /convert tag html ke gutenberg block
 
 		$wpdb->update( $wpdb->prefix.'posts', ['post_content' => $content], ['ID' => $post->ID] ); // update post content
 
@@ -100,8 +99,8 @@ function guten_convert(){
 add_action('admin_head', 'custom_js_to_head');
 function custom_js_to_head() {
 
-	$paged = isset($_GET['paged']) ? $_GET['paged'] : 1;
-	$status = isset($_GET['post_status']) ? $status : '';
+	$paged = isset($_GET['paged']) ? sanitize_text_field($_GET['paged']) : 1;
+	$status = isset($_GET['post_status']) ? sanitize_text_field($_GET['status']) : '';
     ?>
     <script>
     jQuery(function(){
@@ -115,7 +114,7 @@ function custom_js_to_head() {
                 data: {
                     action: 'gutenconvert',
 					nonce: '<?php echo wp_create_nonce('gutenconvert'); ?>',
-					paged: '<?php echo $paged; ?>',
+					paged: '<?php echo intval($paged); ?>',
 					status: '<?php echo $status; ?>'
                 },
                 beforeSend: function(){
